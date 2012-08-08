@@ -8,6 +8,7 @@ setuptools.setup(
     description="Nose plugin to produce test results in html.",
     license="Apache License, Version 2.0",
     url="https://github.com/cboylan/nose-html-output",
+    packages=["htmloutput"],
     setup_requires=['nose'],
     install_requires=['nose'],
     classifiers=[
