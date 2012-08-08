@@ -262,7 +262,7 @@ a.popup_link:hover {
     font-family: "Lucida Console", "Courier New", Courier, monospace;
     text-align: left;
     font-size: 8pt;
-    width: 500px;
+    width: 90%;
 }
 
 }
