@@ -1,9 +1,9 @@
-import htmloutput.htmloutput
+import htmloutput.version
 import setuptools
 
 setuptools.setup(
     name="nosehtmloutput",
-    version=htmloutput.htmloutput.__version__,
+    version=htmloutput.version.__version__,
     author='Hewlett-Packard Development Company, L.P.',
     description="Nose plugin to produce test results in html.",
     license="Apache License, Version 2.0",

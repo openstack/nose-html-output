@@ -42,7 +42,8 @@ import traceback
 from nose.plugins import Plugin
 from xml.sax import saxutils
 
-__version__ = "0.0.1"
+import version
+__version__ = version.__version__
 
 class TemplateData(object):
     """
