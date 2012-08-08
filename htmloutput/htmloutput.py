@@ -423,8 +423,7 @@ a.popup_link:hover {
 
 
 class HtmlOutput(Plugin):
-    """Output test results in html.
-    """
+    """Output test results in html."""
     
     name = 'html-output'
     score = 2 # run late
@@ -483,14 +482,6 @@ class HtmlOutput(Plugin):
     def setOutputStream(self, stream):
         # grab for Monitoring
         self.stream = stream
-        # return dummy stream
-        class dummy:
-            def write(self, *arg):
-                pass
-            def writeln(self, *arg):
-                pass
-        d = dummy()
-        #return d
 
     def report(self, stream):
         self.stopTime = datetime.datetime.now()
@@ -514,8 +505,7 @@ class HtmlOutput(Plugin):
             stream.write(output.encode('utf8'))
 
     def _getReportAttributes(self):
-        """Return report attributes as a list of (name, value).
-        """
+        """Return report attributes as a list of (name, value)."""
         startTime = str(self.startTime)[:19]
         duration = str(self.stopTime - self.startTime)
         status = []
