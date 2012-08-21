@@ -588,13 +588,23 @@ class HtmlOutput(Plugin):
         rmap = {}
         classes = []
         for n,t,o,e in result_list:
-            cls = t.test.__class__
-            if not rmap.has_key(cls):
-                rmap[cls] = []
-                classes.append(cls)
-            rmap[cls].append((n,t,o,e))
+            if hasattr(t, '_tests'):
+                for inner_test in t._tests:
+                    self._add_cls(rmap, classes, inner_test, (n,inner_test,o,e))
+            else:
+                self._add_cls(rmap, classes, t, (n,t,o,e))
         r = [(cls, rmap[cls]) for cls in classes]
         return r
+
+    def _add_cls(self, rmap, classes, test, data_tuple):
+        if hasattr(test, 'test'):
+            cls = test.test.__class__
+        else:
+            cls = t.__class__
+        if not rmap.has_key(cls):
+            rmap[cls] = []
+            classes.append(cls)
+        rmap[cls].append(data_tuple)
 
     def _generate_report_test(self, rows, cid, tid, n, t, o, e):
         # e.g. 'pt1.1', 'ft1.1', etc
