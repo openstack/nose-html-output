@@ -600,7 +600,7 @@ class HtmlOutput(Plugin):
         if hasattr(test, 'test'):
             cls = test.test.__class__
         else:
-            cls = t.__class__
+            cls = test.__class__
         if not rmap.has_key(cls):
             rmap[cls] = []
             classes.append(cls)
