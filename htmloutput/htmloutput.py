@@ -39,7 +39,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import datetime
 import os
 import traceback
+from nose import SkipTest
 from nose.plugins import Plugin
+import nose.plugins.skip
 from xml.sax import saxutils
 
 import version
@@ -89,6 +91,7 @@ class TemplateData(object):
     0: 'pass',
     1: 'fail',
     2: 'error',
+    3: 'skip',
     }
 
     DEFAULT_TITLE = 'Unit Test Report'
@@ -341,6 +344,7 @@ a.popup_link:hover {
 <col align='right' />
 <col align='right' />
 <col align='right' />
+<col align='right' />
 </colgroup>
 <tr id='header_row'>
     <td>Test Group/Test case</td>
@@ -348,6 +352,7 @@ a.popup_link:hover {
     <td>Pass</td>
     <td>Fail</td>
     <td>Error</td>
+    <td>Skip</td>
     <td>View</td>
 </tr>
 %(test_list)s
@@ -357,6 +362,7 @@ a.popup_link:hover {
     <td>%(Pass)s</td>
     <td>%(fail)s</td>
     <td>%(error)s</td>
+    <td>%(skip)s</td>
     <td>&nbsp;</td>
 </tr>
 </table>
@@ -369,6 +375,7 @@ a.popup_link:hover {
     <td>%(Pass)s</td>
     <td>%(fail)s</td>
     <td>%(error)s</td>
+    <td>%(skip)s</td>
     <td><a href="javascript:showClassDetail('%(cid)s',%(count)s)">Detail</a></td>
 </tr>
 """ # variables: (style, desc, count, Pass, fail, error, cid)
@@ -377,7 +384,7 @@ a.popup_link:hover {
     REPORT_TEST_WITH_OUTPUT_TMPL = r"""
 <tr id='%(tid)s' class='%(Class)s'>
     <td class='%(style)s'><div class='testcase'>%(desc)s</div></td>
-    <td colspan='5' align='center'>
+    <td colspan='6' align='center'>
 
     <!--css div popup start-->
     <a class="popup_link" onfocus='this.blur();' href="javascript:showTestDetail('div_%(tid)s')" >
@@ -402,7 +409,7 @@ a.popup_link:hover {
     REPORT_TEST_NO_OUTPUT_TMPL = r"""
 <tr id='%(tid)s' class='%(Class)s'>
     <td class='%(style)s'><div class='testcase'>%(desc)s</div></td>
-    <td colspan='5' align='center'>%(status)s</td>
+    <td colspan='6' align='center'>%(status)s</td>
 </tr>
 """ # variables: (tid, Class, style, desc, status)
 
@@ -424,15 +431,17 @@ a.popup_link:hover {
 
 class HtmlOutput(Plugin):
     """Output test results in html."""
-    
+
     name = 'html-output'
-    score = 2 # run late
-    
+    # Run before the skip plugin in order to catch skipped tests.
+    score = nose.plugins.skip.Skip.score + 50
+
     def __init__(self):
         super(HtmlOutput, self).__init__()
         self.success_count = 0
         self.failure_count = 0
         self.error_count = 0
+        self.skip_count = 0
         self.result = []
 
     def options(self, parser, env=os.environ):
@@ -458,15 +467,20 @@ class HtmlOutput(Plugin):
         if output is None:
             output = test.id()
         self.result.append((0, test, output, ''))
-        
+
     def addError(self, test, err):
-        self.error_count += 1
-        _exc_str = self.formatErr(err)
         output = test.shortDescription()
         if output is None:
             output = test.id()
-        self.result.append((2, test, output, _exc_str))
-            
+        # Skipped tests are handled by SkipTest Exceptions.
+        if err[0] == SkipTest:
+            self.skip_count += 1
+            self.result.append((3, test, output, ''))
+        else:
+            self.error_count += 1
+            _exc_str = self.formatErr(err)
+            self.result.append((2, test, output, _exc_str))
+
     def addFailure(self, test, err):
         self.failure_count += 1
         _exc_str = self.formatErr(err)
@@ -514,7 +528,9 @@ class HtmlOutput(Plugin):
         if self.failure_count:
             status.append('Failure %s' % self.failure_count)
         if self.error_count:
-            status.append('Error %s' % self.error_count  )
+            status.append('Error %s' % self.error_count)
+        if self.skip_count:
+            status.append('Skip %s' % self.skip_count)
         if status:
             status = ' '.join(status)
         else:
@@ -545,11 +561,12 @@ class HtmlOutput(Plugin):
         sortedResult = self._sortResult(self.result)
         for cid, (cls, cls_results) in enumerate(sortedResult):
             # subtotal for a class
-            np = nf = ne = 0
+            np = nf = ne = ns = 0
             for n,t,o,e in cls_results:
                 if n == 0: np += 1
                 elif n == 1: nf += 1
-                else: ne += 1
+                elif n == 2: ne += 1
+                else: ns += 1
 
             # format class description
             if cls.__module__ == "__main__":
@@ -562,10 +579,11 @@ class HtmlOutput(Plugin):
             row = TemplateData.REPORT_CLASS_TMPL % dict(
                 style = ne > 0 and 'errorClass' or nf > 0 and 'failClass' or 'passClass',
                 desc = desc,
-                count = np+nf+ne,
+                count = np + nf + ne + ns,
                 Pass = np,
                 fail = nf,
                 error = ne,
+                skip = ns,
                 cid = 'c%s' % (cid+1),
             )
             rows.append(row)
@@ -575,10 +593,12 @@ class HtmlOutput(Plugin):
 
         report = TemplateData.REPORT_TMPL % dict(
             test_list = ''.join(rows),
-            count = str(self.success_count + self.failure_count + self.error_count),
+            count = str(self.success_count + self.failure_count +
+                        self.error_count + self.skip_count),
             Pass = str(self.success_count),
             fail = str(self.failure_count),
             error = str(self.error_count),
+            skip = str(self.skip_count),
         )
         return report
 
@@ -608,8 +628,9 @@ class HtmlOutput(Plugin):
 
     def _generate_report_test(self, rows, cid, tid, n, t, o, e):
         # e.g. 'pt1.1', 'ft1.1', etc
+        # ptx.x for passed/skipped tests and ftx.x for failed/errored tests.
         has_output = bool(o or e)
-        tid = (n == 0 and 'p' or 'f') + 't%s.%s' % (cid+1,tid+1)
+        tid = ((n == 0 or n == 3) and 'p' or 'f') + 't%s.%s' % (cid+1,tid+1)
         name = t.id().split('.')[-1]
         doc = t.shortDescription() or ""
         desc = doc and ('%s: %s' % (name, doc)) or name
@@ -638,7 +659,7 @@ class HtmlOutput(Plugin):
 
         row = tmpl % dict(
             tid = tid,
-            Class = (n == 0 and 'hiddenRow' or 'none'),
+            Class = ((n == 0 or n == 3) and 'hiddenRow' or 'none'),
             style = n == 2 and 'errorCase' or (n == 1 and 'failCase' or 'none'),
             desc = desc,
             script = script,
