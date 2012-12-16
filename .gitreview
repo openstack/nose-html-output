@@ -1,4 +1,4 @@
 [gerrit]
 host=review.openstack.org
 port=29418
-project=openstack-ci/nose-html-output.git
+project=openstack-infra/nose-html-output.git
