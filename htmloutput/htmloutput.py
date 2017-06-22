@@ -44,7 +44,9 @@ from nose.plugins import Plugin
 import nose.plugins.skip
 from xml.sax import saxutils
 
-import version
+import six
+
+from . import version
 __version__ = version.__version__
 
 class TemplateData(object):
@@ -513,7 +515,7 @@ class HtmlOutput(Plugin):
             ending = ending,
         )
         if self.html_file:
-            html_file = open(self.html_file, 'w')
+            html_file = open(self.html_file, 'wb')
             html_file.write(output.encode('utf8'))
         else:
             stream.write(output.encode('utf8'))
@@ -621,7 +623,7 @@ class HtmlOutput(Plugin):
             cls = test.test.__class__
         else:
             cls = test.__class__
-        if not rmap.has_key(cls):
+        if cls not in rmap:
             rmap[cls] = []
             classes.append(cls)
         rmap[cls].append(data_tuple)
@@ -639,13 +641,17 @@ class HtmlOutput(Plugin):
         # Comments below from the original source project.
         # TODO: clean this up within the context of a nose plugin.
         # o and e should be byte string because they are collected from stdout and stderr?
-        if isinstance(o,str):
+        # NOTE: In Python3 unicode is natively supported as string,
+        # so there is no need to decode() here.
+        if six.PY2 and isinstance(o, str):
             # TODO: some problem with 'string_escape': it escape \n and mess up formating
             # uo = unicode(o.encode('string_escape'))
             uo = o.decode('latin-1')
         else:
             uo = o
-        if isinstance(e,str):
+        # NOTE: In Python3 unicode is natively supported as string,
+        # so there is no need to decode() here.
+        if six.PY2 and isinstance(e, str):
             # TODO: some problem with 'string_escape': it escape \n and mess up formating
             # ue = unicode(e.encode('string_escape'))
             ue = e.decode('latin-1')

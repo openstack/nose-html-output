@@ -9,7 +9,7 @@ setuptools.setup(
     license="Apache License, Version 2.0",
     url="https://git.openstack.org/cgit/openstack-infra/nose-html-output",
     packages=["htmloutput"],
-    install_requires=['nose'],
+    install_requires=['nose', 'six'],
     classifiers=[
         "Environment :: Console",
         "Topic :: Software Development :: Testing",
