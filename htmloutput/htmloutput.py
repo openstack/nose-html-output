@@ -493,7 +493,7 @@ class HtmlOutput(Plugin):
 
     def formatErr(self, err):
         exctype, value, tb = err
-        return ''.join(traceback.format_exception(exctype, value, tb))
+        return ''.join(traceback.format_tb(tb))
 
     def setOutputStream(self, stream):
         # grab for Monitoring
