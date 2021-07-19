@@ -17,4 +17,4 @@ Bugs should be filed on StoryBoard, not GitHub:
    https://storyboard.openstack.org/#!/project/726
 
 Discussion happens on the openstack-infra@lists.openstack.org mail
-list and on Freenode #openstack-infra.
+list and on OFTC #openstack-infra.
